@@ -48,7 +48,6 @@ def check_hashes(password, hashed_text): return make_hashes(password) == hashed_
 
 # --- GESTION DE LA PERSISTANCE (Fix F5) ---
 if 'logged_in' not in st.session_state:
-    # Vérifier si un token existe dans l'URL pour reconnecter l'utilisateur
     if "session_token" in st.query_params:
         u_id = st.query_params["session_token"]
         res = db_query("SELECT id, username, role FROM users WHERE id=?", (u_id,), fetch=True)
@@ -63,7 +62,6 @@ if not st.session_state['logged_in']:
     t_login, t_reg = st.tabs(["Connexion", "Créer un compte"])
     
     with t_login:
-        # Utilisation d'un formulaire pour activer la touche ENTRÉE
         with st.form("login_form", clear_on_submit=False):
             u = st.text_input("Identifiant")
             p = st.text_input("Mot de passe", type='password')
@@ -74,7 +72,6 @@ if not st.session_state['logged_in']:
                 if res and check_hashes(p, res[0][1]):
                     if res[0][3] == 1 or res[0][2] == 'admin':
                         st.session_state.update({'logged_in': True, 'user_id': res[0][0], 'username': u, 'role': res[0][2]})
-                        # Stocker l'ID dans l'URL pour la persistance F5
                         st.query_params["session_token"] = res[0][0]
                         st.rerun()
                     else: st.warning("Compte en attente d'approbation.")
@@ -109,7 +106,7 @@ if selected_acc != "---":
 
 if st.sidebar.button("🚪 Déconnexion"):
     st.session_state['logged_in'] = False
-    st.query_params.clear() # Supprimer le token de l'URL
+    st.query_params.clear()
     st.rerun()
 
 HEADERS = {"X-Auth-Token": SCW_SECRET, "Content-Type": "application/json"}
