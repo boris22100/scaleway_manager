@@ -52,7 +52,21 @@ Une interface d'administration multi-utilisateurs et souveraine pour piloter vos
 -   Choix du type d'instance (`PLAY2`, `DEV1`, etc.).
 -   Provisioning automatique via **Cloud-init** sur Debian Bookworm.
 
-  
+### 🌱 Écologie & Green IT
+
+
+- **Impact Environnemental :** Suivi en temps réel de l'empreinte carbone (gCO2e) et de la consommation d'eau (ml).
+- **Répartition :** Analyse de l'impact par catégorie de ressource (Compute, Storage, etc.).
+- **Rapports :** Accès à l'historique et aux rapports de durabilité.
+
+### 💰 Billing & Dépenses
+
+
+- **Suivi des coûts :** Visualisation des factures mensuelles avec détail HT et TTC.
+- **Extraction intelligente :** Conversion des objets prix complexes de l'API Scaleway en montants lisibles.
+- **Export :** Téléchargement de l'historique des dépenses au format CSV.
+
+
 
 ## 🏗 Tutoriel d'Installation Complet
 
