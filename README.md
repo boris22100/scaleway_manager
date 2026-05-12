@@ -43,6 +43,6 @@ Une interface d'administration multi-utilisateurs et souveraine pour piloter vos
 Clonez le dépôt et lancez l'orchestration :
 
 ```bash
-git clone [https://github.com/ton-user/scaleway_manager.git](https://github.com/ton-user/scaleway_manager.git)
+git clone [https://github.com/boris22100/scaleway_manager.git](https://github.com/ton-user/scaleway_manager.git)
 cd scaleway_manager
 docker-compose up --build -d
