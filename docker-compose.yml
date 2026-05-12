@@ -1,0 +1,9 @@
+services:
+  scw-manager:
+    build: .
+    container_name: scw-manager
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

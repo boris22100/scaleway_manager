@@ -1,0 +1,11 @@
+# Base de données et données sensibles
+data/
+*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Docker logs
+logs/
