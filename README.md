@@ -76,52 +76,12 @@ Ouvrez un terminal (PowerShell sur Windows ou Bash sur Linux) :
 
   
 
-git clone https://github.com/boris22100/scaleway\_manager.git
-cd scaleway\_manager
+`git clone https://github.com/boris22100/scaleway\_manager.git`
+`cd scaleway\_manager`
 
 ###   
 
-### 3\. Fichiers de configuration du projet
-
-  
-
-Assurez-vous que votre répertoire contient les fichiers suivants :
-
-  
-
-**Dockerfile**
-
-  
-
-`FROM python:3.9-slim
-WORKDIR /app
-RUN pip install --no-cache-dir streamlit requests pandas
-COPY app.py .
-RUN mkdir data
-EXPOSE 8501
-CMD \["streamlit", "run", "app.py", "--server.address=0.0.0.0"\]`
-
-  
-
-**docker-compose.yml**
-
-  
-
-`services:
-  scw-manager:
-    build: .
-    ports:
-      - "8501:8501"
-    volumes:
-      - ./data:/app/data
-    restart: unless-stopped`
-
-  
-
-
-###   
-
-### 4\. Lancement de l'application
+### 3\. Lancement de l'application
 
   
 
@@ -129,7 +89,7 @@ Lancez la construction et le démarrage du conteneur :
 
   
 
-docker-compose up --build -d
+`docker-compose up --build -d`
 
   
 
