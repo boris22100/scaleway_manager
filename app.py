@@ -6,7 +6,6 @@ import os
 import hashlib
 from datetime import datetime
 
-# --- CONFIGURATION INTERFACE ---
 st.set_page_config(page_title="Scaleway Manager", page_icon="🚀", layout="wide")
 
 st.markdown("""
@@ -21,7 +20,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- BASE DE DONNÉES ---
 DB_PATH = "data/manager.db"
 if not os.path.exists("data"): os.makedirs("data")
 
@@ -46,7 +44,6 @@ db_query("CREATE TABLE IF NOT EXISTS templates (user_id INTEGER, name TEXT, cont
 def make_hashes(password): return hashlib.sha256(str.encode(password)).hexdigest()
 def check_hashes(password, hashed_text): return make_hashes(password) == hashed_text
 
-# --- GESTION DE LA PERSISTANCE (Fix F5) ---
 if 'logged_in' not in st.session_state:
     if "session_token" in st.query_params:
         u_id = st.query_params["session_token"]
@@ -56,17 +53,14 @@ if 'logged_in' not in st.session_state:
     else:
         st.session_state['logged_in'] = False
 
-# --- AUTHENTIFICATION ---
 if not st.session_state['logged_in']:
     st.title("🔐 Accès Manager")
     t_login, t_reg = st.tabs(["Connexion", "Créer un compte"])
-    
     with t_login:
         with st.form("login_form", clear_on_submit=False):
             u = st.text_input("Identifiant")
             p = st.text_input("Mot de passe", type='password')
             submit_login = st.form_submit_button("Se connecter", use_container_width=True)
-            
             if submit_login:
                 res = db_query("SELECT id, password, role, approved FROM users WHERE username=?", (u,), fetch=True)
                 if res and check_hashes(p, res[0][1]):
@@ -76,7 +70,6 @@ if not st.session_state['logged_in']:
                         st.rerun()
                     else: st.warning("Compte en attente d'approbation.")
                 else: st.error("Identifiants incorrects.")
-                
     with t_reg:
         with st.form("reg_form"):
             nu = st.text_input("Nouvel Identifiant")
@@ -89,14 +82,12 @@ if not st.session_state['logged_in']:
                 st.success("Demande enregistrée !")
     st.stop()
 
-# --- CHARGEMENT DONNÉES ---
 UID, ROLE = st.session_state['user_id'], st.session_state['role']
 accounts_db = db_query("SELECT name, access_key, secret_key, project_id FROM accounts WHERE user_id=?", (UID,), fetch=True)
 acc_names = [a[0] for a in accounts_db]
 templates_db = db_query("SELECT name, content FROM templates WHERE user_id=?", (UID,), fetch=True)
 tmpl_dict = {t[0]: t[1] for t in templates_db}
 
-# Sidebar
 st.sidebar.subheader(f"👤 {st.session_state['username']}")
 selected_acc = st.sidebar.selectbox("Profil Scaleway", ["---"] + acc_names)
 SCW_SECRET, SCW_PROJECT = "", ""
@@ -111,12 +102,10 @@ if st.sidebar.button("🚪 Déconnexion"):
 
 HEADERS = {"X-Auth-Token": SCW_SECRET, "Content-Type": "application/json"}
 
-# Menu principal
-tabs_labels = ["📊 Monitoring", "🌐 DNS", "🚀 Déploiement", "📝 Templates", "⚙️ Comptes"]
+tabs_labels = ["📊 Monitoring", "🌐 DNS", "🚀 Déploiement", "🌱 Écologie", "💰 Dépenses", "📝 Templates", "⚙️ Comptes"]
 if ROLE == 'admin': tabs_labels.append("👑 Gouvernance")
 tabs = st.tabs(tabs_labels)
 
-# --- 1. MONITORING ---
 with tabs[0]:
     if selected_acc == "---": st.info("Sélectionnez un profil.")
     else:
@@ -138,7 +127,6 @@ with tabs[0]:
                             requests.post(f"https://api.scaleway.com/instance/v1/zones/{z}/servers/{s['id']}/action", json={"action":"terminate"}, headers=HEADERS)
                             st.rerun()
 
-# --- 2. DNS ---
 with tabs[1]:
     st.header("Gestionnaire de Zones DNS")
     if selected_acc == "---": st.warning("Sélectionnez un profil.")
@@ -151,7 +139,6 @@ with tabs[1]:
             for i, z_item in enumerate(zones):
                 if cols[i%4].button(f"🌍 {z_item['domain']}", key=f"zb_{z_item['domain']}", use_container_width=True):
                     st.session_state['active_domain'] = z_item['domain']
-
             domain = st.session_state.get('active_domain')
             if domain:
                 st.divider()
@@ -160,14 +147,12 @@ with tabs[1]:
                 if rec_res.status_code == 200:
                     recs = rec_res.json().get("records", [])
                     st.dataframe(pd.DataFrame(recs)[['name','type','data','ttl']], use_container_width=True)
-                    
                     if st.button("📄 Générer Export BIND"):
                         bind = f"; Zone file for {domain}\n$ORIGIN {domain}.\n$TTL 3600\n\n"
                         for r in recs:
                             n = "@" if r['name'] == "" else r['name']
                             bind += f"{n.ljust(20)} {str(r['ttl']).ljust(8)} IN {r['type'].ljust(6)} {r['data']}\n"
                         st.code(bind, language="text")
-                    
                 col_add, col_bulk = st.columns(2)
                 with col_add:
                     st.markdown("### ➕ Ajouter un record")
@@ -185,7 +170,6 @@ with tabs[1]:
                         requests.patch(f"https://api.scaleway.com/domain/v2beta1/dns-zones/{domain}/records", json={"changes": [{"set": {"records": new_recs}}]}, headers=HEADERS)
                         st.success("Zone synchronisée !")
 
-# --- 3. DÉPLOIEMENT ---
 with tabs[2]:
     if selected_acc != "---":
         st.header("Déployer une instance")
@@ -204,8 +188,74 @@ with tabs[2]:
                     requests.post(f"https://api.scaleway.com/instance/v1/zones/{dz}/servers/{sid}/action", json={"action": "poweron"}, headers=HEADERS)
                     st.success("Déploiement initié avec succès.")
 
-# --- 4. TEMPLATES ---
 with tabs[3]:
+    st.header("🌱 Empreinte Environnementale")
+    if selected_acc == "---": 
+        st.info("Sélectionnez un profil.")
+    else:
+        env_type = st.radio("Type d'impact", ["Carbone", "Eau"], horizontal=True)
+        r_org = requests.get("https://api.scaleway.com/account/v3/organizations", headers=HEADERS)
+        if r_org.status_code == 200:
+            organizations = r_org.json().get('organizations', [])
+            if organizations:
+                org_id = organizations[0].get('id')
+                now = datetime.now()
+                start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0).isoformat() + "Z"
+                end_date = now.isoformat() + "Z"
+                metrics_url = "https://api.scaleway.com/environmental-impact/v1alpha1/usage/dashboard/metrics"
+                params = {"organization_id": org_id, "start_date": start_date, "end_date": end_date}
+                try:
+                    r_metrics = requests.get(metrics_url, params=params, headers=HEADERS)
+                    if r_metrics.status_code == 200:
+                        data = r_metrics.json()
+                        metrics = data.get("metrics", [])
+                        if metrics:
+                            df_metrics = pd.DataFrame(metrics)
+                            search_term = 'carbon' if env_type == "Carbone" else 'water'
+                            unit = "gCO2e" if env_type == "Carbone" else "ml"
+                            df_filtered = df_metrics[df_metrics['metric_type'].str.contains(search_term, case=False)]
+                            if not df_filtered.empty:
+                                c1, c2 = st.columns(2)
+                                total_val = df_filtered['value'].sum()
+                                c1.metric(f"Total {env_type}", f"{total_val:.2f} {unit}")
+                                c2.caption(f"Période : du {now.strftime('%d/%m/%Y')}")
+                                st.subheader("Répartition par ressource")
+                                chart_data = df_filtered.groupby('category')['value'].sum()
+                                st.bar_chart(chart_data)
+                                st.dataframe(df_filtered[['category', 'value', 'metric_type']], use_container_width=True, hide_index=True)
+                                st.download_button("📥 Export CSV Empreinte", df_filtered.to_csv(index=False), "impact_environnemental.csv", "text/csv")
+                            else: st.info(f"Aucune donnée de type {env_type} pour cette période.")
+                        else: st.info("Aucune métrique retournée par Scaleway.")
+                    else:
+                        st.error(f"Erreur API ({r_metrics.status_code})")
+                        st.json(r_metrics.json())
+                except Exception as e: st.error(f"Erreur de connexion : {e}")
+
+with tabs[4]:
+    st.header("💰 Dépenses Mensuelles")
+    if selected_acc == "---": st.info("Sélectionnez un profil.")
+    else:
+        r_bill = requests.get(f"https://api.scaleway.com/billing/v2beta1/invoices?project_id={SCW_PROJECT}", headers=HEADERS)
+        if r_bill.status_code == 200:
+            bill_data = r_bill.json().get("invoices", [])
+            if bill_data:
+                def format_price(price_obj):
+                    if pd.isna(price_obj) or price_obj is None: return 0.0
+                    units = price_obj.get('units', 0)
+                    nanos = price_obj.get('nanos', 0)
+                    return float(units) + (float(nanos) / 1000000000)
+                df_bill = pd.DataFrame(bill_data)
+                df_bill['Date'] = pd.to_datetime(df_bill['start_date']).dt.strftime('%m/%Y')
+                df_bill['HT (€)'] = df_bill['total_untaxed'].apply(format_price)
+                df_bill['TTC (€)'] = df_bill['total_taxed'].apply(format_price)
+                df_bill['Statut'] = df_bill['state'].str.replace('paid', 'Payé').str.replace('voided', 'Annulé')
+                st.dataframe(df_bill[['number', 'Date', 'HT (€)', 'TTC (€)', 'Statut']], use_container_width=True, hide_index=True)
+                total_ttc = df_bill[df_bill['state'] == 'paid']['TTC (€)'].sum()
+                st.info(f"**Total cumulé payé : {total_ttc:.2f} €**")
+                st.download_button("📥 Export CSV Dépenses", df_bill.to_csv(index=False), "billing_details.csv", "text/csv")
+            else: st.info("Aucune facture trouvée.")
+
+with tabs[5]:
     st.header("Bibliothèque de Templates")
     with st.form("t_form"):
         tn, tc = st.text_input("Nom du template"), st.text_area("YAML Compose", height=200)
@@ -217,8 +267,7 @@ with tabs[3]:
         if c2.button("Supprimer", key=f"t_{t[0]}"):
             db_query("DELETE FROM templates WHERE user_id=? AND name=?", (UID, t[0])); st.rerun()
 
-# --- 5. COMPTES ---
-with tabs[4]:
+with tabs[6]:
     st.header("Gestion des Profils")
     with st.form("acc_form"):
         an, ak, sk, pi = st.text_input("Nom"), st.text_input("Access Key"), st.text_input("Secret Key", type="password"), st.text_input("Project ID")
@@ -230,9 +279,8 @@ with tabs[4]:
         if c2.button("Retirer", key=f"a_{a}"):
             db_query("DELETE FROM accounts WHERE user_id=? AND name=?", (UID, a)); st.rerun()
 
-# --- GOUVERNANCE ---
 if ROLE == 'admin':
-    with tabs[5]:
+    with tabs[7]:
         st.header("Administration des accès")
         users = db_query("SELECT id, username, role, approved FROM users", fetch=True)
         for u_id, u_n, u_r, u_ap in users:
